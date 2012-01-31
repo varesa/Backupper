@@ -2,3 +2,69 @@
 #
 # File to test rotating folders by date/time
 
+# DEFAULTS START
+
+  prefs_filename='preferences'
+
+  # Default preferences
+  
+    default_history_size=10
+
+# DEFAULTS END
+
+# FUNCTIONS START
+
+  # Determine script location, so files can be called "relatively", even if script called from somewhere else
+  function determine_dir {
+    echo "DEBUG: Finding my home"
+    SOURCE="${BASH_SOURCE[0]}"
+    while [ -h "$SOURCE" ] ; do SOURCE="$(readlink "$SOURCE")"; done
+    directory="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+    echo "DEBUG: My home is " $directory
+  }
+
+  # Read preferences from file:
+  function read_prefs {
+    while read line
+    do
+      echo $line
+      #if [[ ${line/\#*/} == "" ]] ; then echo "ignored" ; continue ; fi # Ignore line ignored -> unnecessary
+      pref_name=${line/:*/}
+      pref_value=${line/*:/}
+
+      echo "DEBUG: Possible variable found: " /$pref_name/
+
+      case "$pref_name" in
+        history_size)
+          echo "DEBUG: Setting history size:" $pref_value
+          history_size=$pref_value
+          ;;
+      esac
+    done < $directory/$prefs_filename
+  }
+
+  # Fill in the missing preferences
+  function fill_prefs {
+    echo Filling missing prefs
+    if [[ $history_size == "" ]] ; then echo "History size not specified, using default: "$default_history_size ; history_size=$default_history_size ; fi
+  }
+
+  # Prints all preferences
+  function print_prefs {
+    echo DEBUG: Printing all prefs:
+    echo DEBUG: History size: $history_size
+
+  }
+
+# FUNCTIONS END
+
+# MAIN START
+
+determine_dir
+
+read_prefs
+fill_prefs
+print_prefs
+
+# MAIN END
+#PROGRAM END
