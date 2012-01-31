@@ -1,5 +1,6 @@
 #!/bin/bash
-
+#
+# A bash script to test reading a text file line by line
 rivinumero=0
 while read line
 do
