@@ -1,22 +1,17 @@
 #!/opt/python3/bin/python3
 
-# IMPORTS
-import sys
-import os
+from sys import path
+from os import sep
+from subprocess import call
+from time import strftime
 
 import Debug
-# IMPORTS END
-
 
 # ALIASES
 msg = Debug.msg
-# ALIASES END
-
 
 # SETTINGS
 Debug.setenabled(True)
-# SETTINGS END
-
 
 # GLOBALS
 cf = None # Files to store configuration and rotations
@@ -25,20 +20,19 @@ rf = None
 dir = None # Path to this script
 
 preferences = {'history_size' : 10} # Default preferences, will be overwritten by config
-# GLOBALS END 
-
+ 
 
 # FUNCTIONS
 def getpath():
 	global dir
-	dir=sys.path[0]
+	dir=path[0]	#sys.path
 	Debug.msg("Directory is: " + dir + "\n")
 
 
 def openconfigurationfile():	# Opens a file handle to rotationFile
 	global cf
 	global dir
-	cf = open(dir + os.sep + 'preferences',mode='r+',encoding='utf-8')
+	cf = open(dir + sep + 'preferences',mode='r+',encoding='utf-8') # sep -> os.sep
 
 def readconfiguration():
 	global cf
@@ -77,7 +71,7 @@ def printconfiguration():
 	
 def openrotationfile():	# Opens a file handle to rotationFile
 	global rf
-	rf = open(dir + os.sep + 'rotation',mode='r+',encoding='utf-8')
+	rf = open(dir + sep + 'rotation',mode='r+',encoding='utf-8') # sep -> os.sep
 
 def getnumofrecords():
 	global rf
@@ -85,11 +79,20 @@ def getnumofrecords():
 		Debug.msg("Number of records: " + str( len( rf.readlines() ) ) + "\n" )
 	else:
 		print("RotationFile is not open!")
+		
+def backup():
+	global dir
+	time=strftime("%Y.%m.%d_%H-%M-%S")
+	call(['rsync', '-a', '--delete', dir + sep + 'testenv/data', dir + sep + 'testenv/' + time + sep]) # sep -> os.sep
+	rf.write(time + "\n")
+	
+def removeolds():
+	pass
 
 def closerotationfile(): # Closes the file handle to rotationFile
 	global rf
 	rf.close()
-# FUNCTIONS END
+
 
 # MAIN
 getpath()
@@ -101,5 +104,6 @@ printconfiguration()
 
 openrotationfile()
 getnumofrecords()
+backup()
+removeolds()
 closerotationfile()
-# MAIN END
