@@ -3,7 +3,7 @@
 from sys import path
 from os import sep
 from subprocess import call
-from time import strftime
+from time import strftime,sleep
 from pickle import dump,load
 
 import Debug
@@ -23,14 +23,12 @@ records = None # List to hold all backup-records
 dir = None # Path to this script
 
 preferences = {'history_size' : 10} # Default preferences, will be overwritten by config
- 
 
 # FUNCTIONS
 def getpath():
 	global dir
 	dir=path[0]	#sys.path
 	Debug.msg("Directory is: " + dir + "\n")
-
 
 def openconfigurationfile():	# Opens a file handle to rotationFile
 	global cf
@@ -46,7 +44,6 @@ def readconfiguration():
 		
 		if line[0] == '#':
 			continue
-			
 		key = line.partition(':')[0]
 		rhs = line.partition(':')[2]
 		value = rhs.partition('#')[0]
@@ -56,9 +53,7 @@ def readconfiguration():
 					preferences['history_size'] = value 
 				else:
 					sys.exit("Invalid valure after: history_size")
-		
 		Debug.msg("")	# Newline		
-		
 
 def closeconfigurationfile(): # Closes the file handle to rotationFile
 	global cf
@@ -71,7 +66,6 @@ def printconfiguration():
 		Debug.msg(pref + ": " + value.rstrip())
 	Debug.msg("")	# Newline
 
-	
 def openrotationfile():	# Opens a file handle to rotationFile
 	global rf
 	rf = open(dir + sep + 'rotation',mode='rb+') # sep -> os.sep
@@ -80,22 +74,15 @@ def getrecords():
 	global rf
 	global records
 	records = load(rf) # load -> pickle.load
-	#print(records)
-	#if(rf != None):
 	Debug.msg("Number of records: " + str( len(records) ) + "\n" )
-	#	records=rf.readlines()
-	#else:
-	#	print("RotationFile is not open!")
-		
+
 def backup():
 	global dir
 	global records
 	time=strftime("%Y.%m.%d_%H-%M-%S")
 	call(['mkdir', dir + sep + 'testenv' + sep + time])
 	call(['rsync', '-va', '--delete', '--link-dest=' + dir + sep + 'testenv' + sep + records[len(records)-2], dir + sep + 'testenv/data', dir + sep + 'testenv/' + time + sep]) # sep -> os.sep
-	#print(records)
 	records.append(time)
-	#print(records)
 
 def removeolds():
 	global records
@@ -107,8 +94,6 @@ def removeolds():
 def rewriterecords():
 	global rf
 	global records
-	#rf.truncate(0)
-	#rf.write()
 	rf.seek(0)
 	dump(records,rf) # dump .> pickle.dump
 	
@@ -117,7 +102,6 @@ def closerotationfile(): # Closes the file handle to rotationFile
 	global rf
 	rf.flush()
 	rf.close()
-
 
 # MAIN
 getpath()
@@ -133,4 +117,5 @@ backup()
 removeolds()
 rewriterecords()
 closerotationfile()
+
 print("\n\n")
