@@ -4,6 +4,7 @@ from sys import path
 from os import sep
 from subprocess import call
 from time import strftime
+from pickle import dump,load
 
 import Debug
 
@@ -11,11 +12,13 @@ import Debug
 msg = Debug.msg
 
 # SETTINGS
-Debug.setenabled(True)
+Debug.setenabled(False)
 
 # GLOBALS
 cf = None # Files to store configuration and rotations
 rf = None
+
+records = None # List to hold all backup-records
 
 dir = None # Path to this script
 
@@ -54,7 +57,7 @@ def readconfiguration():
 				else:
 					sys.exit("Invalid valure after: history_size")
 		
-		print("")	# Newline		
+		Debug.msg("")	# Newline		
 		
 
 def closeconfigurationfile(): # Closes the file handle to rotationFile
@@ -65,32 +68,54 @@ def printconfiguration():
 	global preferences
 	Debug.msg("Preferences:")
 	for pref, value in preferences.items():
-		print(pref + ": " + value.rstrip());
-	print("")	# Newline
+		Debug.msg(pref + ": " + value.rstrip())
+	Debug.msg("")	# Newline
 
 	
 def openrotationfile():	# Opens a file handle to rotationFile
 	global rf
-	rf = open(dir + sep + 'rotation',mode='r+',encoding='utf-8') # sep -> os.sep
+	rf = open(dir + sep + 'rotation',mode='rb+') # sep -> os.sep
 
-def getnumofrecords():
+def getrecords():
 	global rf
-	if(rf != None):
-		Debug.msg("Number of records: " + str( len( rf.readlines() ) ) + "\n" )
-	else:
-		print("RotationFile is not open!")
+	global records
+	records = load(rf) # load -> pickle.load
+	#print(records)
+	#if(rf != None):
+	Debug.msg("Number of records: " + str( len(records) ) + "\n" )
+	#	records=rf.readlines()
+	#else:
+	#	print("RotationFile is not open!")
 		
 def backup():
 	global dir
+	global records
 	time=strftime("%Y.%m.%d_%H-%M-%S")
-	call(['rsync', '-a', '--delete', dir + sep + 'testenv/data', dir + sep + 'testenv/' + time + sep]) # sep -> os.sep
-	rf.write(time + "\n")
-	
+	call(['mkdir', dir + sep + 'testenv' + sep + time])
+	call(['rsync', '-va', '--delete', '--link-dest=' + dir + sep + 'testenv' + sep + records[len(records)-2], dir + sep + 'testenv/data', dir + sep + 'testenv/' + time + sep]) # sep -> os.sep
+	#print(records)
+	records.append(time)
+	#print(records)
+
 def removeolds():
-	pass
+	global records
+	global preferences
+	while len(records) > int(preferences['history_size']):
+		call(['rm', "testenv/" + records[0], '-R'])
+		records.pop(0)
+	
+def rewriterecords():
+	global rf
+	global records
+	#rf.truncate(0)
+	#rf.write()
+	rf.seek(0)
+	dump(records,rf) # dump .> pickle.dump
+	
 
 def closerotationfile(): # Closes the file handle to rotationFile
 	global rf
+	rf.flush()
 	rf.close()
 
 
@@ -103,7 +128,9 @@ closeconfigurationfile()
 printconfiguration()
 
 openrotationfile()
-getnumofrecords()
+getrecords()
 backup()
 removeolds()
+rewriterecords()
 closerotationfile()
+print("\n\n")
