@@ -1,11 +1,11 @@
 #!/opt/python3/bin/python3
 
-from sys import path
+from sys import path,exit
 from os import sep
 from subprocess import call
 from time import strftime,sleep
 from pickle import dump,load
-
+from File import exists
 import Debug
 
 # ALIASES
@@ -29,6 +29,14 @@ def getpath():
 	global dir
 	dir=path[0]	#sys.path
 	Debug.msg("Directory is: " + dir + "\n")
+
+def getlock():
+	if(exists(dir + sep + 'lockfile')):
+		exit("Lockfile present")
+	call(['touch', dir + sep + 'lockfile'])
+
+def closelock():
+    call(['rm', dir + sep + 'lockfile'])
 
 def openconfigurationfile():	# Opens a file handle to rotationFile
 	global cf
@@ -106,6 +114,8 @@ def closerotationfile(): # Closes the file handle to rotationFile
 # MAIN
 getpath()
 
+getlock()
+
 openconfigurationfile()		# Get configuration
 readconfiguration()
 closeconfigurationfile()
@@ -118,4 +128,6 @@ removeolds()
 rewriterecords()
 closerotationfile()
 
+sleep(1.01)
+closelock()
 print("\n\n")
